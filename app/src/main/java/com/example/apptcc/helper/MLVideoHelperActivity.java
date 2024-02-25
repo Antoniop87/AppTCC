@@ -22,10 +22,15 @@ import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.media.Image;
+import android.media.MediaRecorder;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.Surface;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.apptcc.R;
 import com.example.apptcc.helper.vision.GraphicOverlay;
@@ -34,6 +39,8 @@ import com.google.android.material.floatingactionbutton.ExtendedFloatingActionBu
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -52,6 +59,13 @@ public abstract class MLVideoHelperActivity extends AppCompatActivity {
     private VisionBaseProcessor processor;
     private ImageAnalysis imageAnalysis;
 
+    private static final String TAG = "PoseDetectionActivity";
+    private MediaRecorder mediaRecorder;
+    private boolean isRecording = false;
+    private String outputFilePath;
+
+    private Button btn_teste_gravao;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,6 +75,7 @@ public abstract class MLVideoHelperActivity extends AppCompatActivity {
         graphicOverlay = findViewById(R.id.graphic_overlay);
         outputTextView = findViewById(R.id.output_text_view);
         addFaceButton = findViewById(R.id.button_add_face);
+        btn_teste_gravao = findViewById(R.id.btn_teste_gravacao);
 
         cameraProviderFuture = ProcessCameraProvider.getInstance(getApplicationContext());
 
@@ -71,6 +86,17 @@ public abstract class MLVideoHelperActivity extends AppCompatActivity {
         } else {
             initSource();
         }
+        grava();
+    }
+
+    private void grava(){
+        btn_teste_gravao.setOnClickListener(v -> {
+            if (isRecording == false){
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        });
     }
 
     @Override
@@ -212,4 +238,65 @@ public abstract class MLVideoHelperActivity extends AppCompatActivity {
     public void onAddFaceClicked(View view) {
 
     }
+
+    private void startRecording() {
+        if (isRecording) {
+            return;
+        }
+
+        mediaRecorder = new MediaRecorder();
+        outputFilePath = getOutputMediaFile().toString();
+
+        try {
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+            mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+            mediaRecorder.setVideoEncodingBitRate(10000000);
+            mediaRecorder.setVideoFrameRate(30);
+            mediaRecorder.setVideoSize(1280, 720);
+            mediaRecorder.setOutputFile(outputFilePath);
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+            isRecording = true;
+        } catch (IOException e) {
+            Log.e(TAG, "Erro ao iniciar a gravação: " + e.getMessage());
+            Toast.makeText(this, "Erro ao iniciar a gravação.", Toast.LENGTH_SHORT).show();
+            releaseMediaRecorder();
+        }
+    }
+
+    private void stopRecording() {
+        if (isRecording && mediaRecorder != null) {
+            mediaRecorder.stop();
+            releaseMediaRecorder();
+            Toast.makeText(this, "Vídeo salvo em: " + outputFilePath, Toast.LENGTH_SHORT).show();
+            isRecording = false;
+        }
+    }
+
+    private void releaseMediaRecorder() {
+        if (mediaRecorder != null) {
+            mediaRecorder.reset();
+            mediaRecorder.release();
+            mediaRecorder = null;
+        }
+    }
+
+    private File getOutputMediaFile() {
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_DCIM), "Camera");
+
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.d(TAG, "Falha ao criar diretório");
+                return null;
+            }
+        }
+
+        return new File(mediaStorageDir.getPath() + File.separator +
+                "VID_" + System.currentTimeMillis() + ".mp4");
+    }
+
 }
