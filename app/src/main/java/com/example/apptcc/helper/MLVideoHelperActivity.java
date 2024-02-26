@@ -91,7 +91,7 @@ public abstract class MLVideoHelperActivity extends AppCompatActivity {
 
     private void grava(){
         btn_teste_gravao.setOnClickListener(v -> {
-            if (isRecording == false){
+            if (!isRecording){
                 startRecording();
             } else {
                 stopRecording();
@@ -248,11 +248,11 @@ public abstract class MLVideoHelperActivity extends AppCompatActivity {
         outputFilePath = getOutputMediaFile().toString();
 
         try {
-            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+//            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
             mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
             mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+//            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
             mediaRecorder.setVideoEncodingBitRate(10000000);
             mediaRecorder.setVideoFrameRate(30);
             mediaRecorder.setVideoSize(1280, 720);
